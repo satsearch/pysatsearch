@@ -1,7 +1,14 @@
 import requests
 
 
-debug = 0
+class Parameter:
+    def __init__(self, value, max_value, min_value, unit, description):
+        self.value = value
+        self.max_value = max_value
+        self.min_value = min_value
+        self.unit = unit
+        self.description = description
+        self.all = [value, max_value, min_value, unit, description]
 
 
 class Satsearch:
@@ -17,6 +24,26 @@ class Satsearch:
         self.minimum_value = 0
         self.maximum_value = 0
         self.print = 0
+        self.debug = 0
+        self.attributes = {}
+
+        self.name = "No name"
+        self.summary = "No summary"
+        self.uuid = "No uuid"
+        self.last_modified = "No modification date"
+        self.supplier = "No supplier"
+        self.iterator = 0
+
+        self.yr = None
+        self.torque = None
+        self.momentum = None
+        self.mechanical_vibration = None
+        self.radiation_tolerance = None
+        self.mass = None
+        self.power = None
+        self.voltage = None
+        self.angular_velocity = None
+        self.temperature = None
 
     def get_url(self, url_type, uuid):
         url = "https://api.satsearch.co/v1/" + url_type
@@ -27,12 +54,12 @@ class Satsearch:
             print("ERROR code", response.status_code)
         return response.json()
 
-    def debug_variable_info(self, data, level, debug):
-        if debug > 0:
+    def debug_variable_info(self, data, level):
+        if self.debug > 0:
             if type(data) is str:
                 print("STRING ", end="")
             elif type(data) is dict:
-                add_indent(level)
+                self.add_indent(level)
                 print("DICT with keys: ", end="")
                 keys = list(data.keys())
                 print(keys)
@@ -57,41 +84,41 @@ class Satsearch:
         else:
             return variable
 
-    def part_properties(self, uuid, print_data=0):
-        if len(uuid) > 15 and print_data:
+    def get_part(self, uuid, print_data=0):
+        if len(uuid) > 15 and print_data:  # To check if we actually have a part and not a service or supplier
             print("VALUE      MAX_VAL    MIN_VAL    UNIT       DESCRIPTION")
             print("----------------------------------------------------------------")
         self.print = print_data
-        self.properties(self.get_url("products", uuid), 0, debug)
+        self.properties(self.get_url("products", uuid), 0)
 
     def print_all(self, uuid):
-        self.print_all_sub(self.get_url("products", uuid), 0, debug)
+        self.print_all_sub(self.get_url("products", uuid), 0)
 
     def print_supplier(self, uuid):
-        self.print_all_sub(self.get_url("suppliers", uuid), 0, debug)
+        self.print_all_sub(self.get_url("suppliers", uuid), 0)
 
     # function for getting the list of all suppliers.
     def print_supplier_list(self):
-        self.print_all_sub(self.get_url("suppliers", False), 1, debug)
+        self.print_all_sub(self.get_url("suppliers", False), 1)
 
     def print_products_list(self):
-        self.print_all_sub(self.get_url("products", False), 1, debug)
+        self.print_all_sub(self.get_url("products", False), 1)
 
-    def print_all_sub(self, data, level, debug_bool):
+    def print_all_sub(self, data, level):
         if type(data) is str:
-            self.debug_variable_info(data, level, debug_bool)
+            self.debug_variable_info(data, level)
             print(data)
         elif type(data) is list:
-            self.debug_variable_info(data, level, debug_bool)
+            self.debug_variable_info(data, level)
             for row in range(0, len(data)):
                 self.add_indent(level)
                 print(" -- ", end="")
-                self.print_all_sub(data[row], level, debug_bool)
+                self.print_all_sub(data[row], level)
 
         elif type(data) is dict:
             keys = list(data.keys())
 
-            self.debug_variable_info(data, level, debug_bool)
+            self.debug_variable_info(data, level)
 
             for row in range(0, len(keys)):
                 self.add_indent(level)
@@ -101,18 +128,19 @@ class Satsearch:
                 if level == 0:
                     print("", end="\n\n\n")
 
-                if debug > 0:
+                if self.debug > 0:
                     print("NEW ", end="")
                     print("SUB"*level, end="")
                     print("SECTION: ", end="")
 
                 print(name, end="")
+
                 if type(info) is str:
                     print(": ", end="")
-                    self.print_all_sub(info, level, debug)
+                    self.print_all_sub(info, level)
                 elif type(info) is dict or type(info) is list:
                     print("", end="\n")
-                    self.print_all_sub(info, level+1, debug_bool)
+                    self.print_all_sub(info, level+1)
                 else:
                     print("")
         else:
@@ -121,56 +149,58 @@ class Satsearch:
             print(type(data))
 
     # A function for neatly printing the characteristics of a part in a table.
-    def properties(self, data, level, debug):
+    def properties(self, data, level):
         if type(data) is list:
             for row in range(0, len(data)):
-                self.properties(data[row], level, debug)
+                self.properties(data[row], level)
 
         elif type(data) is dict:
             keys = list(data.keys())
 
-            self.debug_variable_info(data, level, debug)
+            self.debug_variable_info(data, level)
 
             for row in range(0, len(keys)):
                 name = keys[row]
                 info = data[keys[row]]
+                if level == 0:
+                    if name == "name" and self.iterator == 0:
+                        self.name = info
+                        self.iterator = 1
+                    if name == "uuid":
+                        self.uuid = info
+                    if name == "last_modified":
+                        self.last_modified = info
+                    if name == "supplier_name":
+                        self.supplier = info
+                    if name == "summary":
+                        self.summary = info
                 if level > 0:
                     if name == "value":
                         self.value = info
                         if info == "":
                             self.value = "/"
-                        self.value = self.set_length(self.value)
                     elif name == "minimum_value":
                         self.minimum_value = info
                         if info == "":
                             self.minimum_value = "/"
-                        self.minimum_value = self.set_length(self.minimum_value)
                     elif name == "maximum_value":
                         self.maximum_value = info
                         if info == "":
                             self.maximum_value = "/"
-                        self.maximum_value = self.set_length(self.maximum_value)
                     elif name == "measurement_unit":
                         self.measurement_unit = info
                         if info == "":
                             self.measurement_unit = "/"
-                        self.measurement_unit = self.set_length(self.measurement_unit)
                     if level == 2:
                         if name == "description":
                             self.description = info
-                            if self.print == 1:
-                                print(self.value, self.maximum_value, self.minimum_value, self.measurement_unit, self.description)
-
+                            print(self.set_length(self.value), self.set_length(self.minimum_value),
+                                  self.set_length(self.maximum_value), self.set_length(self.measurement_unit),
+                                  self.description)
+                            parameter_data = Parameter(self.value, self.maximum_value, self.minimum_value,
+                                                       self.measurement_unit, self.description)
+                            self.attributes[self.measurement_unit] = parameter_data
                 if type(info) is str:
-                    self.properties(info, level, debug)
+                    self.properties(info, level)
                 elif type(info) is dict or type(info) is list:
-                    self.properties(info, level+1, debug)
-
-
-ss = Satsearch("18a15813704205b3cf2ebeb364aa2ed246a9ed143b6911de4a52cb6045a0049ad1c951a6e8943e3dbc8c5c2c4242a447AbJtXh3J6aazkWKpCRz3nMut6Wu1YCWoEQESOin6qvkeqeDshqw0onjlA7dfM+3n", "ed33aeacabfa6f700faaae3113c6a20f5415f26a53fcde7a4a3bf6437328bdc72950cc5c923fcae2eda85799f7fe9330AkJwB+84zzkIR+glEhYTJ5c5W/6iLMTM5Lzf9HX/uOkK0YjyZZtRoS6sx+Ld6cv3")
-ss.part_properties("5df368dc-d93f-52bf-beff-896152078722", True)
-ss.part_properties("attributes")
-ss.print_all("5df368dc-d93f-52bf-beff-896152078722")
-ss.print_supplier_list()
-ss.print_supplier("5xf308dc-d93f-52bf-beff-896152078722")
-ss.print_products_list()
+                    self.properties(info, level+1)

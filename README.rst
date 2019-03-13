@@ -1,12 +1,9 @@
-Sample Module Repository
+Pysatsearch
 ========================
 
-This simple project is an example repo for Python projects.
+Simple Python API for accessing the Satsearch API
 
-`Learn more <http://www.kennethreitz.org/essays/repository-structure-and-python>`_.
 
 ---------------
 
-If you want to learn more about ``setup.py`` files, check out `this repository <https://github.com/kennethreitz/setup.py>`_.
-
-✨🍰✨
+If you want to learn more, check out `this repository <https://github.com/satsearch/pysatsearch/setup.py>`_.

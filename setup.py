@@ -13,7 +13,7 @@ with open('LICENSE') as f:
 
 setup(
     name='PySatsearch',
-    version='1.0.0',
+    version='1.0.1',
     description='Python code for accessing the Satsearch API',
     long_description=readme,
     author='Joe Verbist for Satsearch',

@@ -338,11 +338,3 @@ def get_codes():
     except:
         return "couldn't load the .env file..."
 
-
-part = Satsearch(get_codes()[0], get_codes()[1])
-part.get_part("5df368dc-d93f-52bf-beff-896152078722", True)
-part.print_all("5df368dc-d93f-52bf-beff-896152078722")
-print(part.get['mass'].all)
-print(part.get['angular_speed'].all)
-# part.print_attributes_to_db()
-# print(part.attributes["mass"].all)
